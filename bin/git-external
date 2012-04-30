@@ -54,9 +54,9 @@ def normalize_url(url)
 end
 
 def init_external(url, path, branch='master')
-  require 'ftools'
+  require 'fileutils'
   unless File.directory? "#{path}/.git"
-    File.makedirs File.dirname(path)
+    FileUtils.makedirs File.dirname(path)
     url = normalize_url url
     system "git clone #{url} #{path}"
     system "cd #{path}; git checkout --track -b #{branch} origin/#{branch}"
@@ -64,7 +64,7 @@ def init_external(url, path, branch='master')
 end
 
 def update_external(url, path, branch='master')
-  require 'ftools'
+  require 'fileutils'
   if File.directory? "#{path}/.git"
    `cd #{path}; git pull origin #{branch}`
   end
