@@ -39,8 +39,10 @@ def normalize_url(url)
   if url =~ /^\./
     origin_url = `git config --get remote.origin.url`.chomp
 
+    # If url has no protocol...
     unless origin_url =~ /^\w+:\/\//
       if origin_url =~ /^([^:\/]+):([^:]+)/
+        # ... then assume it's ssh
         origin_url = "ssh://#{$1}/#{$2}"
       end
     end
@@ -90,6 +92,15 @@ def update_external(url, path, branch='master')
   end
 end
 
+def get_default_head(path)
+  origin_head = `cd #{path}; git symbolic-ref refs/remotes/origin/HEAD`
+  if origin_head =~ /refs\/remotes\/origin\/(.*)/
+    $1
+  else
+    raise "#{path}: Can't determine default HEAD for origin remote"
+  end
+end
+
 def command_add(url, path, branch='master')
   command_rm(path)
   `git config -f #{$externals_file} --add external.#{path}.path #{path}`
@@ -110,6 +121,12 @@ def command_rm(path)
     # Remove entry from .gitignore file
     `perl -pi -e 's/\\Q#{path.gsub(/\//, '\/')}\\E\n//g' #{$ignore_file}`
   end
+end
+
+def command_list_default_heads
+  $configurations.each do |name, config|
+    puts "#{name}: #{get_default_head(config["path"])}"
+  end  
 end
 
 def command_init
@@ -147,6 +164,7 @@ when "init" then command_init
 when "update" then command_update
 when "cmd" then command_cmd ARGV[1]
 when "list" then command_list
+when "heads" then command_list_default_heads
 else usage
 end
 
