@@ -53,13 +53,28 @@ def normalize_url(url)
   end
 end
 
+# Check if a branch exists
+def branch_exists(path, branch)
+    branches = `cd #{path}; git branch`
+    regex = Regexp.new('[\\n\\s\\*]+' + Regexp.escape(branch.to_s) + '\\n')
+    result = ((branches =~ regex) ? true : false)
+    return result
+end
+
 def init_external(url, path, branch='master')
   require 'fileutils'
   unless File.directory? "#{path}/.git"
     FileUtils.makedirs File.dirname(path)
     url = normalize_url url
     system "git clone #{url} #{path}"
-    system "cd #{path}; git checkout --track -b #{branch} origin/#{branch}"
+
+    # Create a local tracking branch if it doesn't exist already
+    unless branch_exists(path, branch)
+      system "cd #{path}; git branch checkout --track #{branch} origin/#{branch}"
+    end
+
+    # Check out the local branch
+    system "cd #{path}; git checkout #{branch}"
   end
 end
 
