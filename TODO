@@ -2,3 +2,6 @@
 - Add branch specification
 - Update command doesn't take args, though help says it does
 - Specify multiple remotes per external project
+- Overload the backticks/system function, so that it can optionally output debug information
+- Add more verbose documentation for each command
+
