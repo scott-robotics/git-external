@@ -2,7 +2,7 @@ Gem::Specification.new do |s|
   s.name = 'aharrison24-git-external'
   s.version = '0.1.2'
   s.platform = Gem::Platform::RUBY
-  s.authors = ["Daniel Cestari, Alastair Harrison"]
+  s.authors = ["Daniel Cestari, Olivier Bazoud, Alastair Harrison"]
   s.email = ["dcestari@gmail.com"]
   s.homepage = "http://github.com/dcestari/git-external"
   s.summary = "Git version of an svn:external, an alternative to Git Submodule"
