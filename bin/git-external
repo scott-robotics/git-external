@@ -122,8 +122,13 @@ def command_status
     url = config["url"]
     path = config["path"]
 
-    gitBranchExit, gitBranch = execute("cd #{path} && git config \"branch.$(git symbolic-ref HEAD --short).merge\" | sed \"s/refs\\/heads\\///g\"")
-    gitRemoteExit, gitRemote = execute("cd #{path} && git config \"remote.$(git config \"branch.$(git symbolic-ref HEAD --short).remote\").url\"");
+    # Figure out the short name of the current branch
+    # This is equivalent to 'git symbolic-ref --short HEAD'
+    # but the --short is only available in pretty recent versions of git
+    headBranch = `cd #{path} && git symbolic-ref HEAD | sed \"s/refs\\/heads\\///g\"`.chomp
+    
+    gitBranchExit, gitBranch = execute("cd #{path} && git config \"branch.#{headBranch}.merge\" | sed \"s/refs\\/heads\\///g\"")
+    gitRemoteExit, gitRemote = execute("cd #{path} && git config \"remote.$(git config \"branch.#{headBranch}.remote\").url\"");
 
     if gitBranchExit != 0 && gitRemoteExit != 0
       puts "  ✗ #{path}: exit code #{gitBranchExit}, #{gitRemoteExit}"
