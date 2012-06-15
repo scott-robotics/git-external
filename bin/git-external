@@ -92,7 +92,7 @@ end
 def update_external(url, path, branch='master')
   require 'fileutils'
   if File.directory? "#{path}/.git"
-   `cd #{path}; git pull origin #{branch}`
+   `cd #{path}; git remote update; git pull origin #{branch}`
   end
 end
 
