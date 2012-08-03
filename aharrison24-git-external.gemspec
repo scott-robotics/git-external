@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'aharrison24-git-external'
-  s.version = '0.1.6'
+  s.version = '0.1.7'
   s.platform = Gem::Platform::RUBY
   s.authors = ["Daniel Cestari, Olivier Bazoud, Alastair Harrison"]
   s.email = ["dcestari@gmail.com"]
