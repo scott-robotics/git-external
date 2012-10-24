@@ -41,6 +41,11 @@ Status of your repository:
 git external status
 </pre>
 
+Configuration of your repository:
+<pre class="terminal">
+git external list
+</pre>
+
 Execute a command over "external" repository:
 <pre class="terminal">
 git external cmd 'git status'
