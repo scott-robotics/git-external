@@ -150,6 +150,7 @@ def command_rm(path)
     File.delete $externals_file if `wc -l #{$externals_file}`.chomp.to_i == 0
   end
   if File.file? $ignore_file
+    # Remove entry from .gitignore file
     `perl -pi -e 's/\\Q#{path.gsub(/\//, '\/')}\\E\n//g' #{$ignore_file}`
   end
 end
