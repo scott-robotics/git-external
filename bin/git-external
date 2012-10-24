@@ -12,6 +12,7 @@ def usage
   puts "   or: git external init [--] [<path>...]"
   puts "   or: git external update [--] [<path>...]"
   puts "   or: git external cmd '<command>'"
+  puts "   or: git external list"
 end
 
 def load_configuration
@@ -173,6 +174,10 @@ def command_cmd(cmd)
   end
 end
 
+def command_list
+  print_configuration
+end
+
 load_configuration
 
 command=ARGV[0]
@@ -184,6 +189,7 @@ when "rm" then command_rm ARGV[1]
 when "init" then command_init
 when "update" then command_update
 when "cmd" then command_cmd ARGV[1]
+when "list" then command_list
 else usage
 end
 
