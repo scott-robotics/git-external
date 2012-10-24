@@ -16,6 +16,11 @@ Setup a new git repository:
 git init
 </pre>
 
+Help git external:
+<pre class="terminal">
+git external
+</pre>
+
 Setup a new "external" repository:
 <pre class="terminal">
 git external add <repository> <path> <branch>
