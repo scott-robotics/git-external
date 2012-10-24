@@ -48,3 +48,14 @@ Remove an external repository:
 git external rm <path>
 </pre>
 
+## How to build
+
+<pre class="terminal">
+git clone git://github.com/obazoud/git-external.git
+cd git-external
+git checkout develop
+gem build git-external.gemspec && gem install git-external-0.1.1.gem --no-ri --no-rdoc
+</pre>
+
+And voilà!
+
