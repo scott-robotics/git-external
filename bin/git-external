@@ -65,17 +65,21 @@ end
 
 def init_external(url, path, branch='master')
   require 'fileutils'
-  unless File.directory? "#{path}/.git"
+  if File.directory? "#{path}/.git"
+    puts "- Repository already exists"
+  else
     FileUtils.makedirs File.dirname(path)
     url = normalize_url url
     system "git clone #{url} #{path}"
 
     # Create a local tracking branch if it doesn't exist already
     unless branch_exists(path, branch)
+      puts "- Creating local tracking branch: #{branch} -> origin/#{branch}"
       system "cd #{path}; git branch checkout --track #{branch} origin/#{branch}"
     end
 
     # Check out the local branch
+    puts "- Checkout local branch: #{branch}"
     system "cd #{path}; git checkout #{branch}"
   end
 end
