@@ -3,21 +3,69 @@
 Intends to provide an alternative to git-submodules but without being
 attach to an specific commit
 
----
+## Requiments
 
-More docs to come ...
+* ruby 1.8.7
+* gem
+* git
 
 ## Usage
 
+Setup a new git repository:
+<pre class="terminal">
+git init
+</pre>
+
+Help git external:
+<pre class="terminal">
+git external
+</pre>
+
 Setup a new "external" repository:
-        git external add <repository> <path>
+<pre class="terminal">
+git external add <repository> <path> <branch>
+</pre>
 
 Initialize external repositories:
-        git external init
+<pre class="terminal">
+git external init
+</pre>
 
 Update existing repositories to the latest version:
-        git external update
+<pre class="terminal">
+git external update
+</pre>
+
+Status of your repository:
+<pre class="terminal">
+git external status
+</pre>
+
+Configuration of your repository:
+<pre class="terminal">
+git external list
+</pre>
+
+Execute a command over "external" repository:
+<pre class="terminal">
+git external cmd 'git status'
+git external cmd 'git pull --rebase'
+git external cmd 'git fetch'
+</pre>
 
 Remove an external repository:
-        git external rm <path>
+<pre class="terminal">
+git external rm <path>
+</pre>
+
+## How to build
+
+<pre class="terminal">
+git clone git://github.com/obazoud/git-external.git
+cd git-external
+git checkout develop
+gem build obazoud-git-external.gemspec && gem install obazoud-git-external-0.2.0.gem --no-ri --no-rdoc
+</pre>
+
+And voilà!
 

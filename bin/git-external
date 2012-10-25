@@ -97,8 +97,13 @@ end
 
 def update_external(url, path, branch='master')
   require 'fileutils'
+  puts "- Updating #{path}"
   if File.directory? "#{path}/.git"
-   `cd #{path}; git remote update; git pull origin #{branch}`
+    if uncommitted_changes?(path)
+      puts "#{path} - uncommitted changes detected, can not update repository"
+    else
+      `cd #{path}; git remote update; git pull origin #{branch}`
+    end
   end
 end
 
