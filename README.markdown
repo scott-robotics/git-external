@@ -61,10 +61,9 @@ git external rm <path>
 ## How to build
 
 <pre class="terminal">
-git clone git://github.com/obazoud/git-external.git
+git clone git://github.com/aharrison24/git-external.git
 cd git-external
-git checkout develop
-gem build obazoud-git-external.gemspec && gem install obazoud-git-external-0.2.0.gem --no-ri --no-rdoc
+gem build aharrison24-git-external.gemspec && gem install obazoud-git-external-0.1.8.gem --no-ri --no-rdoc
 </pre>
 
 And voilà!
