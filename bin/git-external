@@ -74,9 +74,15 @@ def branch_exists(path, branch)
     return result
 end
 
+# Check that a git repo exists in the given path
+def repo_exists(path)
+  require 'fileutils'
+  return File.directory? "#{path}/.git"
+end
+
 def init_external(url, path, branch='master')
   require 'fileutils'
-  if File.directory? "#{path}/.git"
+  if repo_exists(path)
     puts "- Repository already exists"
   else
     FileUtils.makedirs File.dirname(path)
@@ -96,9 +102,8 @@ def init_external(url, path, branch='master')
 end
 
 def update_external(url, path, branch='master')
-  require 'fileutils'
-  puts "- Updating #{path}"
-  if File.directory? "#{path}/.git"
+  if repo_exists(path)
+    puts "- Updating #{path}"
     if uncommitted_changes?(path)
       puts "#{path} - uncommitted changes detected, can not update repository"
     else
@@ -108,11 +113,13 @@ def update_external(url, path, branch='master')
 end
 
 def get_default_head(path)
-  origin_head = `cd #{path}; git symbolic-ref refs/remotes/origin/HEAD`
-  if origin_head =~ /refs\/remotes\/origin\/(.*)/
-    $1
-  else
-    raise "#{path}: Can't determine default HEAD for origin remote"
+  if repo_exists(path)
+    origin_head = `cd #{path}; git symbolic-ref refs/remotes/origin/HEAD`
+    if origin_head =~ /refs\/remotes\/origin\/(.*)/
+      $1
+    else
+      raise "#{path}: Can't determine default HEAD for origin remote"
+    end
   end
 end
 
@@ -133,35 +140,38 @@ def command_status
     url = config["url"]
     path = config["path"]
 
-    # Figure out the short name of the current branch
-    # This is equivalent to 'git symbolic-ref --short HEAD'
-    # but the --short is only available in pretty recent versions of git
-    headBranch = `cd #{path} && git symbolic-ref HEAD | sed \"s/refs\\/heads\\///g\"`.chomp
-    
-    gitBranchExit, gitBranch = execute("cd #{path} && git config \"branch.#{headBranch}.merge\" | sed \"s/refs\\/heads\\///g\"")
-    gitRemoteExit, gitRemote = execute("cd #{path} && git config \"remote.$(git config \"branch.#{headBranch}.remote\").url\"");
+    if repo_exists(path)
 
-    if uncommitted_changes?(path)
-      changesString = "(Uncommitted Changes) "
-    else
-      changesString = ""
-    end
+      # Figure out the short name of the current branch
+      # This is equivalent to 'git symbolic-ref --short HEAD'
+      # but the --short is only available in pretty recent versions of git
+      headBranch = `cd #{path} && git symbolic-ref HEAD | sed \"s/refs\\/heads\\///g\"`.chomp
+      
+      gitBranchExit, gitBranch = execute("cd #{path} && git config \"branch.#{headBranch}.merge\" | sed \"s/refs\\/heads\\///g\"")
+      gitRemoteExit, gitRemote = execute("cd #{path} && git config \"remote.$(git config \"branch.#{headBranch}.remote\").url\"");
 
-    if gitBranchExit != 0 && gitRemoteExit != 0
-      puts "  ✗ #{path}: exit code #{gitBranchExit}, #{gitRemoteExit}"
-      broken += 1
-    else
-      if branch == gitBranch[0]
-        if url == gitRemote[0]
-          puts "  ✓ #{path} #{changesString}"
-          ok += 1
+      if uncommitted_changes?(path)
+        changesString = "(Uncommitted Changes) "
+      else
+        changesString = ""
+      end
+
+      if gitBranchExit != 0 && gitRemoteExit != 0
+        puts "  ✗ #{path}: exit code #{gitBranchExit}, #{gitRemoteExit}"
+        broken += 1
+      else
+        if branch == gitBranch[0]
+          if url == gitRemote[0]
+            puts "  ✓ #{path} #{changesString}"
+            ok += 1
+          else
+            puts "  ✗ #{path} #{changesString}-- expected url '#{url}' but was '#{gitRemote[0]}'"
+            broken +=1
+          end
         else
-          puts "  ✗ #{path} #{changesString}-- expected url '#{url}' but was '#{gitRemote[0]}'"
+          puts "  ✗ #{path} #{changesString}-- expected branch '#{branch}' but was '#{gitBranch[0]}'"
           broken +=1
         end
-      else
-        puts "  ✗ #{path} #{changesString}-- expected branch '#{branch}' but was '#{gitBranch[0]}'"
-        broken +=1
       end
     end
   end
@@ -192,7 +202,9 @@ end
 
 def command_list_default_heads
   $configurations.each do |name, config|
-    puts "#{name}: #{get_default_head(config["path"])}"
+    if repo_exists(config["path"])
+      puts "#{name}: #{get_default_head(config["path"])}"
+    end
   end  
 end
 
@@ -205,14 +217,18 @@ end
 
 def command_update
   $configurations.each do |name, config|
-    update_external config["url"], config["path"], config["branch"]
+    if repo_exists(config["path"])
+      update_external config["url"], config["path"], config["branch"]
+    end
   end
 end
 
 def command_cmd(cmd)
   $configurations.each do |name, config|
     path = config['path']
-    system("echo #{path}; cd #{path}; #{cmd}")
+    if repo_exists(path)
+      system("echo #{path}; cd #{path}; #{cmd}")
+    end
   end
 end
 
