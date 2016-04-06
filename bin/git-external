@@ -136,6 +136,7 @@ end
 def command_status
   ok = 0
   broken = 0
+  uninitialised = 0
   $configurations.each do |name, config|
     branch = config["branch"]
     url = config["url"]
@@ -174,9 +175,12 @@ def command_status
           broken +=1
         end
       end
+    else
+      puts "  ~ #{path} is not initialised"
+      uninitialised +=1
     end
   end
-  puts "#{broken > 0 ? "✗" : "✓"} » #{ok} ok • #{broken} broken"
+  puts "#{broken > 0 ? "✗" : "✓"} » #{ok} ok • #{uninitialised} uninitialised • #{broken} broken"
 end
 
 def command_add(url, path, branch='master')
