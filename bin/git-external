@@ -11,6 +11,7 @@ def usage
   puts "   or: git external rm <path>"
   puts "   or: git external status"
   puts "   or: git external init [--] [<path>...]"
+  puts "   or: git external init_single <name>"
   puts "   or: git external update [--] [<path>...]"
   puts "   or: git external cmd '<command>'"
   puts "   or: git external list"
@@ -215,6 +216,15 @@ def command_init
   end
 end
 
+def command_init_single(external_name)
+  $configurations.each do |name, config|
+    if name == external_name
+      puts name
+      init_external config["url"], config["path"], config["branch"]
+    end
+  end
+end
+
 def command_update
   $configurations.each do |name, config|
     if repo_exists(config["path"])
@@ -249,6 +259,7 @@ when "update" then command_update
 when "cmd" then command_cmd ARGV[1]
 when "list" then command_list
 when "heads" then command_list_default_heads
+when "init_single" then command_init_single ARGV[1]
 else usage
 end
 
