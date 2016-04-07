@@ -117,7 +117,7 @@ def init_external(url, path, branch='master')
     # Create a local tracking branch if it doesn't exist already
     unless branch_exists(path, branch)
       puts "- Creating local tracking branch: #{branch} -> origin/#{branch}"
-      system "cd #{path}; git branch checkout --track #{branch} origin/#{branch}"
+      system "cd #{path}; git branch #{branch} --track origin/#{branch}"
     end
 
     # Check out the local branch
