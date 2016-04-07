@@ -74,18 +74,18 @@ def untracked_files?(path)
 end
 
 # find how many commits we are ahead/behind our upstream
-def ahead_behind_upstream(path)
-  upstreamExit, upstream = execute("cd #{path}; git rev-list --count --left-right origin...HEAD 2> /dev/null")
+def ahead_behind_upstream(path, branch)
+  upstreamExit, upstream = execute("cd #{path}; git rev-list --count --left-right origin/#{branch}...#{branch} 2> /dev/null")
   return "" if upstreamExit != 0
   behind, ahead = upstream.first.match(/^(\d*)\t(\d*)$/).captures
-  puts "behind is #{Integer(behind)}"
-  puts "ahead is #{Integer(ahead)}"
   my_str = ""
   if Integer(behind) > 0 || Integer(ahead) > 0
     my_str << "("
-    my_str << "Ahead by #{ahead} commit" if Integer(ahead) > 0
+    my_str << "Ahead by #{ahead} commit" if Integer(ahead) == 1
+    my_str << "Ahead by #{ahead} commits" if Integer(ahead) > 1
     my_str << ", " if Integer(ahead) > 0 && Integer(behind) > 0
-    my_str << "Behind by #{behind} commit" if Integer(behind) > 0
+    my_str << "Behind by #{behind} commit" if Integer(behind) == 1
+    my_str << "Behind by #{behind} commits" if Integer(behind) > 1
     my_str << ")"
   end
   my_str
@@ -161,6 +161,9 @@ def command_status
   ok = 0
   broken = 0
   uninitialised = 0
+  puts "=================================================="
+  puts "Status:"
+  puts "=================================================="
   $configurations.each do |name, config|
     branch = config["branch"]
     url = config["url"]
@@ -188,8 +191,7 @@ def command_status
         untrackedString = ""
       end
 
-      upstream = ahead_behind_upstream(path)
-      puts 
+      upstream = ahead_behind_upstream(path, branch)
 
       if gitBranchExit != 0 && gitRemoteExit != 0
         puts "  ✗ #{path}: exit code #{gitBranchExit}, #{gitRemoteExit}"
@@ -214,6 +216,7 @@ def command_status
     end
   end
   puts "#{broken > 0 ? "✗" : "✓"} » #{ok} ok • #{broken} broken - #{uninitialised} uninitialised "
+  puts "=================================================="
 end
 
 def command_add(url, path, branch='master')
