@@ -105,15 +105,7 @@ def repo_exists(path)
   return File.directory? "#{path}/.git"
 end
 
-def init_external(url, path, branch='master')
-  require 'fileutils'
-  if repo_exists(path)
-    puts "- Repository already exists"
-  else
-    FileUtils.makedirs File.dirname(path)
-    url = normalize_url url
-    system "git clone #{url} #{path}"
-
+def update_repo(path, branch='master')
     # Create a local tracking branch if it doesn't exist already
     unless branch_exists(path, branch)
       puts "- Creating local tracking branch: #{branch} -> origin/#{branch}"
@@ -122,7 +114,18 @@ def init_external(url, path, branch='master')
 
     # Check out the local branch
     puts "- Checkout local branch: #{branch}"
-    system "cd #{path}; git checkout #{branch}"
+    system "cd #{path}; git checkout #{branch}; git pull;"
+end
+
+def init_external(url, path, branch='master')
+  require 'fileutils'
+  if repo_exists(path)
+    puts "\t- Repository already exists"
+  else
+    FileUtils.makedirs File.dirname(path)
+    url = normalize_url url
+    system "git clone #{url} #{path}"
+    update_repo(path, branch)
   end
 end
 
@@ -132,13 +135,7 @@ def update_external(url, path, branch='master')
     if uncommitted_changes?(path)
       puts "#{path} - uncommitted changes detected, can not update repository"
     else
-      # Create a local tracking branch if it doesn't exist already
-      unless branch_exists(path, branch)
-        puts "- Creating local tracking branch: #{branch} -> origin/#{branch}"
-        system "cd #{path}; git branch #{branch} --track origin/#{branch}"
-      end
-      puts "- Checkout local branch: #{branch}"
-      system "cd #{path}; git remote update; git fetch; git checkout #{branch}"
+      update_repo(path, branch)
     end
   end
 end
