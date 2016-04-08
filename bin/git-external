@@ -256,6 +256,7 @@ def command_init
   $configurations.each do |name, config|
     puts name
     init_external config["url"], config["path"], config["branch"]
+    puts "=================================================="
   end
 end
 
@@ -272,6 +273,7 @@ def command_update
   $configurations.each do |name, config|
     if repo_exists(config["path"])
       update_external config["url"], config["path"], config["branch"]
+      puts "=================================================="
     end
   end
 end
@@ -281,6 +283,7 @@ def command_cmd(cmd)
     path = config['path']
     if repo_exists(path)
       system("echo #{path}; cd #{path}; #{cmd}")
+      puts "=================================================="
     end
   end
 end
