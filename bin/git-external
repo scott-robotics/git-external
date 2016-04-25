@@ -272,10 +272,11 @@ end
 def command_update
   $configurations.each do |name, config|
     if repo_exists(config["path"])
-      update_external config["url"], config["path"], config["branch"]
       puts "=================================================="
+      update_external config["url"], config["path"], config["branch"]
     end
   end
+  command_status
 end
 
 def command_cmd(cmd)
