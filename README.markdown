@@ -26,9 +26,14 @@ Setup a new "external" repository:
 git external add <repository> <path> <branch>
 </pre>
 
-Initialize external repositories:
+Initialize all external repositories:
 <pre class="terminal">
 git external init
+</pre>
+
+Initialize individual external repository:
+<pre class="terminal">
+git external init_single <name>
 </pre>
 
 Update existing repositories to the latest version:
