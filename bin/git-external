@@ -10,9 +10,8 @@ def usage
   puts "Usage: git external add <repository-url> <path> [<branch>]"
   puts "   or: git external rm <path>"
   puts "   or: git external status"
-  puts "   or: git external init"
-  puts "   or: git external init_single <name>"
-  puts "   or: git external update"
+  puts "   or: git external init [<name>]"
+  puts "   or: git external update [<name>]"
   puts "   or: git external cmd '<command>'"
   puts "   or: git external list"
   puts "   or: git external heads"
@@ -105,19 +104,24 @@ def repo_exists(path)
   return File.directory? "#{path}/.git"
 end
 
-def update_repo(path, branch='master')
-    # Create a local tracking branch if it doesn't exist already
-    unless branch_exists(path, branch)
-      puts "- Creating local tracking branch: #{branch} -> origin/#{branch}"
-      system "cd #{path}; git branch #{branch} --track origin/#{branch}"
-    end
+def update_repo(path, branch, commit)
+  # Create a local tracking branch if it doesn't exist already
+  unless branch_exists(path, branch)
+    puts "- Creating local tracking branch: #{branch} -> origin/#{branch}"
+    system "cd #{path}; git branch #{branch} --track origin/#{branch}"
+  end
 
+  if commit == 'HEAD' or commit == nil
     # Check out the local branch
     puts "- Checkout local branch: #{branch}"
     system "cd #{path}; git checkout #{branch}; git pull;"
+  else
+    puts "- Checkout local commit: #{commit}"
+    system "cd #{path}; git fetch; git checkout #{commit};"
+  end
 end
 
-def init_external(url, path, branch='master')
+def init_external(url, path, branch, commit)
   require 'fileutils'
   if repo_exists(path)
     puts "\t- Repository already exists"
@@ -125,17 +129,17 @@ def init_external(url, path, branch='master')
     FileUtils.makedirs File.dirname(path)
     url = normalize_url url
     system "git clone #{url} #{path}"
-    update_repo(path, branch)
+    update_repo(path, branch, commit)
   end
 end
 
-def update_external(url, path, branch='master')
+def update_external(url, path, branch, commit)
   if repo_exists(path)
     puts "- Updating #{path}"
     if uncommitted_changes?(path)
       puts "#{path} - uncommitted changes detected, can not update repository"
     else
-      update_repo(path, branch)
+      update_repo(path, branch, commit)
     end
   end
 end
@@ -178,7 +182,7 @@ def command_status
       # This is equivalent to 'git symbolic-ref --short HEAD'
       # but the --short is only available in pretty recent versions of git
       headBranch = `cd #{path} && git symbolic-ref HEAD | sed \"s/refs\\/heads\\///g\"`.chomp
-      
+
       gitBranchExit, gitBranch = execute("cd #{path} && git config \"branch.#{headBranch}.merge\" | sed \"s/refs\\/heads\\///g\"")
       gitRemoteExit, gitRemote = execute("cd #{path} && git config \"remote.$(git config \"branch.#{headBranch}.remote\").url\"");
 
@@ -222,11 +226,12 @@ def command_status
   puts "=================================================="
 end
 
-def command_add(url, path, branch='master')
+def command_add(url, path, branch='master', commit='HEAD')
   command_rm(path)
   `git config -f #{$externals_file} --add external.#{path}.path #{path}`
   `git config -f #{$externals_file} --add external.#{path}.url #{url}`
   `git config -f #{$externals_file} --add external.#{path}.branch #{branch}`
+  `git config -f #{$externals_file} --add external.#{path}.commit #{commit}`
   `echo "#{path}" >> #{$ignore_file}`
 end
 
@@ -235,6 +240,7 @@ def command_rm(path)
     `git config -f #{$externals_file} --unset external.#{path}.path`
     `git config -f #{$externals_file} --unset external.#{path}.url`
     `git config -f #{$externals_file} --unset external.#{path}.branch`
+    `git config -f #{$externals_file} --unset external.#{path}.commit`
     `git config -f #{$externals_file} --remove-section external.#{path} > /dev/null 2>&1`
     File.delete $externals_file if `wc -l #{$externals_file}`.chomp.to_i == 0
   end
@@ -249,31 +255,47 @@ def command_list_default_heads
     if repo_exists(config["path"])
       puts "#{name}: #{get_default_head(config["path"])}"
     end
-  end  
+  end
 end
 
-def command_init
-  $configurations.each do |name, config|
-    puts name
-    init_external config["url"], config["path"], config["branch"]
-    puts "=================================================="
+def command_init(external_name)
+  if external_name == "all"
+    $configurations.each do |name, config|
+      command_init_single name
+    end
+  else
+    command_init_single external_name
   end
 end
 
 def command_init_single(external_name)
   $configurations.each do |name, config|
     if name == external_name
-      puts name
-      init_external config["url"], config["path"], config["branch"]
+      puts "Init: ~ #{name}"
+      init_external(config["url"], config["path"],
+                    config["branch"] || "master",
+                    config["commit"] || "HEAD")
     end
   end
 end
 
-def command_update
+def command_update(external_name)
+  if external_name == "all"
+    $configurations.each do |name, config|
+      command_update_single name
+    end
+  else
+    command_update_single external_name
+  end
+end
+
+def command_update_single(external_name)
   $configurations.each do |name, config|
-    if repo_exists(config["path"])
+    if name == external_name and repo_exists(config["path"])
       puts "=================================================="
-      update_external config["url"], config["path"], config["branch"]
+      update_external(config["url"], config["path"],
+                      config["branch"] || "master",
+                      config["commit"] || "HEAD")
     end
   end
   command_status
@@ -299,14 +321,13 @@ command=ARGV[0]
 
 case command
 when "status" then command_status
-when "add" then command_add ARGV[1], ARGV[2], ARGV[3] || "master"
+when "add" then command_add ARGV[1], ARGV[2], ARGV[3] || "master", ARGV[4] || "HEAD"
 when "rm" then command_rm ARGV[1]
-when "init" then command_init
-when "update" then command_update
+when "init" then command_init ARGV[1] || "all"
+when "update" then command_update ARGV[1] || "all"
 when "cmd" then command_cmd ARGV[1]
 when "list" then command_list
 when "heads" then command_list_default_heads
-when "init_single" then command_init_single ARGV[1]
 else usage
 end
 

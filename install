@@ -1,0 +1,4 @@
+#!/bin/bash
+
+gem build scottnothing-git-external.gemspec
+sudo gem install scottnothing-git-external*.gem
