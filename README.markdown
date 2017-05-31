@@ -1,9 +1,9 @@
 # git-external
 
 Intends to provide an alternative to git-submodules but without being
-attach to an specific commit
+attached to an specific commit
 
-## Requiments
+## Requirements
 
 * ruby 1.8.7
 * gem
@@ -23,7 +23,7 @@ git external
 
 Setup a new "external" repository:
 <pre class="terminal">
-git external add <repository> <path> <branch>
+git external add <repository> <path> [<branch> [<commit>]]
 </pre>
 
 Initialize all external repositories:
@@ -33,12 +33,17 @@ git external init
 
 Initialize individual external repository:
 <pre class="terminal">
-git external init_single <name>
+git external init <name>
 </pre>
 
 Update existing repositories to the latest version:
 <pre class="terminal">
 git external update
+</pre>
+
+Or just a single repo:
+<pre class="terminal">
+git external update <name>
 </pre>
 
 Status of your repository:
@@ -68,8 +73,6 @@ git external rm <path>
 <pre class="terminal">
 git clone git://github.com/aharrison24/git-external.git
 cd git-external
-gem build aharrison24-git-external.gemspec && gem install obazoud-git-external-0.1.8.gem --no-ri --no-rdoc
+./install
 </pre>
-
-And voilà!
 

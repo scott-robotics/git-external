@@ -7,7 +7,7 @@ $ignore_file = "#{$root_dir}/.gitignore"
 $configurations = {}
 
 def usage
-  puts "Usage: git external add <repository-url> <path> [<branch>]"
+  puts "Usage: git external add <repository-url> <path> [<branch> [<commit>]]"
   puts "   or: git external rm <path>"
   puts "   or: git external status"
   puts "   or: git external init [<name>]"
