@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.homepage = "http://github.com/scottnothing/git-external"
   s.summary = "Git version of an svn:external, an alternative to Git Submodule"
   s.description = "Extension for git which adds a command providing similar functionality to git submodules but without attaching each module to a single version"
-
+  s.files = ['lib/font_format.rb']
   s.executables = ['git-external']
 end
 

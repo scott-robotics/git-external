@@ -23,7 +23,7 @@ git external
 
 Setup a new "external" repository:
 <pre class="terminal">
-git external add <repository> <path> [<branch> [<commit>]]
+git external add &lt;repository> &lt;path&gt; [&lt;branch&gt; [&lt;commit&gt;]]
 </pre>
 
 Initialize all external repositories:
@@ -33,7 +33,7 @@ git external init
 
 Initialize individual external repository:
 <pre class="terminal">
-git external init <name>
+git external init &lt;name&gt;
 </pre>
 
 Update existing repositories to the latest version:
@@ -43,7 +43,7 @@ git external update
 
 Or just a single repo:
 <pre class="terminal">
-git external update <name>
+git external update &lt;name&gt;
 </pre>
 
 Status of your repository:
@@ -65,13 +65,13 @@ git external cmd 'git fetch'
 
 Remove an external repository:
 <pre class="terminal">
-git external rm <path>
+git external rm &lt;path&gt;
 </pre>
 
 ## How to build
 
 <pre class="terminal">
-git clone git://github.com/aharrison24/git-external.git
+git clone git://github.com/scottnothing/git-external.git
 cd git-external
 ./install
 </pre>

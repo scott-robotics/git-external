@@ -1,10 +1,16 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 
+require 'font_format'
+
 $root_dir = `git rev-parse --show-toplevel`.chomp
 $externals_file = "#{$root_dir}/.gitexternals"
 $ignore_file = "#{$root_dir}/.gitignore"
 $configurations = {}
+
+$sym_ok = "✓".green
+$sym_uninit = "~".blue
+$sym_error = "✗".red
 
 def usage
   puts "Usage: git external add <repository-url> <path> [<branch> [<commit>]]"
@@ -168,9 +174,7 @@ def command_status
   ok = 0
   broken = 0
   uninitialised = 0
-  puts "=================================================="
-  puts "Status:"
-  puts "=================================================="
+  puts "--------------------------------------------------"
   $configurations.each do |name, config|
     branch = config["branch"]
     url = config["url"]
@@ -181,49 +185,56 @@ def command_status
       # Figure out the short name of the current branch
       # This is equivalent to 'git symbolic-ref --short HEAD'
       # but the --short is only available in pretty recent versions of git
-      headBranch = `cd #{path} && git symbolic-ref HEAD | sed \"s/refs\\/heads\\///g\"`.chomp
-
-      gitBranchExit, gitBranch = execute("cd #{path} && git config \"branch.#{headBranch}.merge\" | sed \"s/refs\\/heads\\///g\"")
-      gitRemoteExit, gitRemote = execute("cd #{path} && git config \"remote.$(git config \"branch.#{headBranch}.remote\").url\"");
+      headBranch = `cd #{path} && git rev-parse --abbrev-ref HEAD`.chomp
+      isDetached = headBranch == 'HEAD'
 
       if uncommitted_changes?(path)
-        changesString = "(Uncommitted Changes) "
+        changesString = "(Uncommitted Changes) ".cyan
       else
         changesString = ""
       end
 
       if untracked_files?(path)
-        untrackedString = "(Untracked Files) "
+        untrackedString = "(Untracked Files) ".magenta
       else
         untrackedString = ""
       end
 
       upstream = ahead_behind_upstream(path, branch)
 
-      if gitBranchExit != 0 && gitRemoteExit != 0
-        puts "  ✗ #{path}: exit code #{gitBranchExit}, #{gitRemoteExit}"
+      unless isDetached
+        gitBranchExit, gitBranch = execute("cd #{path} && git config \"branch.#{headBranch}.merge\" | sed \"s/refs\\/heads\\///g\"")
+        gitRemoteExit, gitRemote = execute("cd #{path} && git config \"remote.$(git config \"branch.#{headBranch}.remote\").url\"")
+      end
+
+      if isDetached
+        puts "  #{$sym_ok} #{path} #{"[detached]".brown} #{changesString} #{untrackedString}"
+      elsif gitBranchExit != 0 and gitRemoteExit != 0
+        puts "  #{$sym_error} #{path}: exit code #{gitBranchExit}, #{gitRemoteExit}"
         broken += 1
       else
         if branch == gitBranch[0]
           if url == gitRemote[0]
-            puts "  ✓ #{path} #{upstream} #{changesString} #{untrackedString}"
+            puts "  #{$sym_ok} #{path} #{upstream} #{changesString} #{untrackedString}"
             ok += 1
           else
-            puts "  ✗ #{path} #{upstream} #{changesString} #{untrackedString} -- expected url '#{url}' but was '#{gitRemote[0]}'"
+            puts "  #{$sym_error} #{path} #{upstream} #{changesString} #{untrackedString} -- expected url '#{url}' but was '#{gitRemote[0]}'"
             broken +=1
           end
         else
-          puts "  ✗ #{path} #{changesString} #{untrackedString} -- expected branch '#{branch}' but was '#{gitBranch[0]}'"
+          puts "  #{$sym_error} #{path} #{changesString} #{untrackedString} -- expected branch '#{branch}' but was '#{gitBranch[0]}'"
           broken +=1
         end
       end
+
     else
-      puts "  ~ #{path} is not initialised"
+      puts "  #{$sym_uninit} #{path} #{"is not initialised".italic}"
       uninitialised +=1
     end
   end
-  puts "#{broken > 0 ? "✗" : "✓"} » #{ok} ok • #{broken} broken - #{uninitialised} uninitialised "
-  puts "=================================================="
+  puts ""
+  puts "#{broken > 0 ? $sym_error : $sym_ok} » #{ok} ok • #{broken} broken • #{uninitialised} uninitialised "
+  puts "--------------------------------------------------"
 end
 
 def command_add(url, path, branch='master', commit='HEAD')
@@ -292,7 +303,7 @@ end
 def command_update_single(external_name)
   $configurations.each do |name, config|
     if name == external_name and repo_exists(config["path"])
-      puts "=================================================="
+      puts "--------------------------------------------------"
       update_external(config["url"], config["path"],
                       config["branch"] || "master",
                       config["commit"] || "HEAD")
@@ -306,7 +317,7 @@ def command_cmd(cmd)
     path = config['path']
     if repo_exists(path)
       system("echo #{path}; cd #{path}; #{cmd}")
-      puts "=================================================="
+      puts "--------------------------------------------------"
     end
   end
 end
@@ -321,7 +332,9 @@ command=ARGV[0]
 
 case command
 when "status" then command_status
-when "add" then command_add ARGV[1], ARGV[2], ARGV[3] || "master", ARGV[4] || "HEAD"
+when "add" then command_add(ARGV[1], ARGV[2],
+                            ARGV[3] || "master",
+                            ARGV[4] || "HEAD")
 when "rm" then command_rm ARGV[1]
 when "init" then command_init ARGV[1] || "all"
 when "update" then command_update ARGV[1] || "all"
