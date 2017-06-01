@@ -186,16 +186,17 @@ def command_status
       # This is equivalent to 'git symbolic-ref --short HEAD'
       # but the --short is only available in pretty recent versions of git
       headBranch = `cd #{path} && git rev-parse --abbrev-ref HEAD`.chomp
+      revision = `cd #{path} && git rev-parse HEAD`.chomp
       isDetached = headBranch == 'HEAD'
 
       if uncommitted_changes?(path)
-        changesString = "(Uncommitted Changes) ".cyan
+        changesString = " (Uncommitted Changes)".brown
       else
         changesString = ""
       end
 
       if untracked_files?(path)
-        untrackedString = "(Untracked Files) ".magenta
+        untrackedString = " (Untracked Files)".magenta
       else
         untrackedString = ""
       end
@@ -208,27 +209,38 @@ def command_status
       end
 
       if isDetached
-        puts "  #{$sym_ok} #{path} #{"[detached]".brown} #{changesString} #{untrackedString}"
+        revision_short = `cd #{path} && git rev-parse --short HEAD`.chomp
+        if config["commit"] == revision
+          rev_string = "[detached|#{revision_short}]".cyan
+          puts "  #{$sym_ok} #{name} #{rev_string}#{changesString}#{untrackedString}"
+          ok += 1
+        else
+          rev_string = "[detached|#{revision_short}]".red
+          puts "  #{$sym_error} #{name} #{rev_string}#{changesString}#{untrackedString}"
+          broken += 1
+        end
       elsif gitBranchExit != 0 and gitRemoteExit != 0
-        puts "  #{$sym_error} #{path}: exit code #{gitBranchExit}, #{gitRemoteExit}"
+        puts "  #{$sym_error} #{name}: exit code #{gitBranchExit}, #{gitRemoteExit}"
         broken += 1
       else
+        branch_string = "[#{branch}]".cyan
         if branch == gitBranch[0]
           if url == gitRemote[0]
-            puts "  #{$sym_ok} #{path} #{upstream} #{changesString} #{untrackedString}"
+            puts "  #{$sym_ok} #{name} #{branch_string} #{upstream}#{changesString}#{untrackedString}"
             ok += 1
           else
-            puts "  #{$sym_error} #{path} #{upstream} #{changesString} #{untrackedString} -- expected url '#{url}' but was '#{gitRemote[0]}'"
+            puts "  #{$sym_error} #{name} #{branch_string} #{upstream}#{changesString}#{untrackedString} -- expected url '#{url}' but was '#{gitRemote[0]}'"
             broken +=1
           end
         else
-          puts "  #{$sym_error} #{path} #{changesString} #{untrackedString} -- expected branch '#{branch}' but was '#{gitBranch[0]}'"
+          current_branch = "[#{gitBranch[0]}]".red
+          puts "  #{$sym_error} #{name} #{current_branch}#{changesString}#{untrackedString}, expected #{branch_string}"
           broken +=1
         end
       end
 
     else
-      puts "  #{$sym_uninit} #{path} #{"is not initialised".italic}"
+      puts "  #{$sym_uninit} #{name} #{"is not initialised".italic}"
       uninitialised +=1
     end
   end
@@ -277,6 +289,7 @@ def command_init(external_name)
   else
     command_init_single external_name
   end
+  command_status
 end
 
 def command_init_single(external_name)
@@ -298,6 +311,7 @@ def command_update(external_name)
   else
     command_update_single external_name
   end
+  command_status
 end
 
 def command_update_single(external_name)
@@ -309,7 +323,6 @@ def command_update_single(external_name)
                       config["commit"] || "HEAD")
     end
   end
-  command_status
 end
 
 def command_cmd(cmd)
