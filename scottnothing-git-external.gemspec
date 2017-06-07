@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'scottnothing-git-external'
-  s.version = '0.1.8b'
+  s.version = '0.1.9'
   s.platform = Gem::Platform::RUBY
   s.authors = ["Daniel Cestari, Olivier Bazoud, Alastair Harrison"]
   s.email = ["dcestari@gmail.com"]

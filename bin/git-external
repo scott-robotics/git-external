@@ -13,11 +13,13 @@ $sym_uninit = "~".blue
 $sym_error = "✗".red
 
 def usage
-  puts "Usage: git external add <repository-url> <path> [<branch> [<commit>]]"
+  puts "Usage: git external add <repository-url> <path> <branch>"
+  puts "   or: git external add <repository-url> <path> <commit#>"
   puts "   or: git external rm <path>"
   puts "   or: git external status"
   puts "   or: git external init [<name>]"
   puts "   or: git external update [<name>]"
+  puts "   or: git external reset [<name>]"
   puts "   or: git external cmd '<command>'"
   puts "   or: git external list"
   puts "   or: git external heads"
@@ -117,7 +119,7 @@ def update_repo(path, branch, commit)
     system "cd #{path}; git branch #{branch} --track origin/#{branch}"
   end
 
-  if commit == 'HEAD' or commit == nil
+  if commit == 'HEAD' or commit.nil?
     # Check out the local branch
     puts "- Checkout local branch: #{branch}"
     system "cd #{path}; git checkout #{branch}; git pull;"
@@ -174,87 +176,71 @@ def command_status
   ok = 0
   broken = 0
   uninitialised = 0
+
   puts "--------------------------------------------------"
+
   $configurations.each do |name, config|
+    commit = config["commit"]
     branch = config["branch"]
     url = config["url"]
     path = config["path"]
 
-    if repo_exists(path)
+    if !commit.nil? and !branch.nil?
+      puts "  #{$sym_error} #{name} -- Amiguous definition: cannot specify "\
+           "both #{"commit".italic} and #{"branch".italic} in .gitexternals"
+      broken += 1
+      next
+    end
 
+    if repo_exists(path)
       # Figure out the short name of the current branch
-      # This is equivalent to 'git symbolic-ref --short HEAD'
-      # but the --short is only available in pretty recent versions of git
       headBranch = `cd #{path} && git rev-parse --abbrev-ref HEAD`.chomp
       revision = `cd #{path} && git rev-parse HEAD`.chomp
-      isDetached = headBranch == 'HEAD'
 
-      if uncommitted_changes?(path)
-        changesString = " (Uncommitted Changes)".brown
-      else
-        changesString = ""
-      end
+      changesString = (uncommitted_changes?(path) ? " (Uncommitted Changes)".brown : "")
+      untrackedString = (untracked_files?(path) ? " (Untracked Files)".magenta : "")
 
-      if untracked_files?(path)
-        untrackedString = " (Untracked Files)".magenta
-      else
-        untrackedString = ""
-      end
+      currentBranch = (headBranch == "HEAD" ? "[#{revision.slice(0..9)}...]" : "[#{headBranch}]")
+      expectedBranch  = (branch.nil? ? "[#{commit.slice(0..9)}...]" : "[#{branch}]")
 
       upstream = ahead_behind_upstream(path, branch)
 
-      unless isDetached
-        gitBranchExit, gitBranch = execute("cd #{path} && git config \"branch.#{headBranch}.merge\" | sed \"s/refs\\/heads\\///g\"")
-        gitRemoteExit, gitRemote = execute("cd #{path} && git config \"remote.$(git config \"branch.#{headBranch}.remote\").url\"")
-      end
+      gitRemoteExit, gitRemote = execute("cd #{path} && git config --get remote.origin.url")
 
-      if isDetached
-        revision_short = `cd #{path} && git rev-parse --short HEAD`.chomp
-        if config["commit"] == revision
-          rev_string = "[detached|#{revision_short}]".cyan
-          puts "  #{$sym_ok} #{name} #{rev_string}#{changesString}#{untrackedString}"
-          ok += 1
-        else
-          rev_string = "[detached|#{revision_short}]".red
-          puts "  #{$sym_error} #{name} #{rev_string}#{changesString}#{untrackedString}"
-          broken += 1
-        end
-      elsif gitBranchExit != 0 and gitRemoteExit != 0
-        puts "  #{$sym_error} #{name}: exit code #{gitBranchExit}, #{gitRemoteExit}"
+      if gitRemote[0] != url
+        puts "  #{$sym_error} #{name} URL=#{gitRemote[0]}, expected #{url}"
         broken += 1
-      else
-        branch_string = "[#{branch}]".cyan
-        if branch == gitBranch[0]
-          if url == gitRemote[0]
-            puts "  #{$sym_ok} #{name} #{branch_string} #{upstream}#{changesString}#{untrackedString}"
-            ok += 1
-          else
-            puts "  #{$sym_error} #{name} #{branch_string} #{upstream}#{changesString}#{untrackedString} -- expected url '#{url}' but was '#{gitRemote[0]}'"
-            broken +=1
-          end
-        else
-          current_branch = "[#{gitBranch[0]}]".red
-          puts "  #{$sym_error} #{name} #{current_branch}#{changesString}#{untrackedString}, expected #{branch_string}"
-          broken +=1
+      elsif (!branch.nil? and branch == headBranch) or (!commit.nil? and commit == revision)
+        puts "  #{$sym_ok} #{name} #{currentBranch.cyan}#{changesString}#{untrackedString}"
+        if upstream != ""
+          puts "      --> #{upstream}"
         end
+        ok += 1
+      else
+        puts "  #{$sym_error} #{name} #{currentBranch.red}#{changesString}#{untrackedString}, expected #{expectedBranch.cyan}"
+        broken += 1
       end
 
     else
       puts "  #{$sym_uninit} #{name} #{"is not initialised".italic}"
       uninitialised +=1
     end
+
   end
   puts ""
   puts "#{broken > 0 ? $sym_error : $sym_ok} » #{ok} ok • #{broken} broken • #{uninitialised} uninitialised "
   puts "--------------------------------------------------"
 end
 
-def command_add(url, path, branch='master', commit='HEAD')
+def command_add(url, path, branch_or_commit='master')
   command_rm(path)
   `git config -f #{$externals_file} --add external.#{path}.path #{path}`
   `git config -f #{$externals_file} --add external.#{path}.url #{url}`
-  `git config -f #{$externals_file} --add external.#{path}.branch #{branch}`
-  `git config -f #{$externals_file} --add external.#{path}.commit #{commit}`
+  if branch_or_commit.length != 40
+    `git config -f #{$externals_file} --add external.#{path}.branch #{branch_or_commit}`
+  else
+    `git config -f #{$externals_file} --add external.#{path}.commit #{branch_or_commit}`
+  end
   `echo "#{path}" >> #{$ignore_file}`
 end
 
@@ -325,6 +311,43 @@ def command_update_single(external_name)
   end
 end
 
+# Performs a `git reset --hard branch/commit` to reset all repos to what
+# .gitexternals specifies
+def command_reset(external_name)
+  puts "Are you sure you want to reset <#{external_name}>? Unsaved changes will be lost. (yes/no)"
+  answer = STDIN.gets.chomp
+  unless answer == "yes" or answer == "y"
+    return
+  end
+
+  if external_name == "all"
+    $configurations.each do |name, config|
+      command_reset_single name
+    end
+  else
+    command_reset_single external_name
+  end
+  command_status
+end
+
+def command_reset_single(external_name)
+  $configurations.each do |name, config|
+    if name == external_name and repo_exists(config["path"])
+        # Create a local tracking branch if it doesn't exist already
+        commit = config["commit"]
+        branch = config["branch"]
+        if commit.nil? or commit == 'HEAD'
+          # Check out the local branch
+          puts "- Reset local branch [#{name}|#{branch}]:"
+          system "cd #{config["path"]}; git reset --hard #{branch}; git checkout #{branch};"
+        else
+          puts "- Reset local commit [#{name}|#{commit.slice(0..9)}...]:"
+          system "cd #{config["path"]}; git reset --hard #{commit}; git checkout #{commit};"
+        end
+    end
+  end
+end
+
 def command_cmd(cmd)
   $configurations.each do |name, config|
     path = config['path']
@@ -339,18 +362,22 @@ def command_list
   print_configuration
 end
 
+if $root_dir != `pwd`.chomp
+  puts "Must execute 'git external' from root git directory: #{$root_dir}"
+  exit
+end
+
 load_configuration
 
 command=ARGV[0]
 
 case command
 when "status" then command_status
-when "add" then command_add(ARGV[1], ARGV[2],
-                            ARGV[3] || "master",
-                            ARGV[4] || "HEAD")
+when "add" then command_add(ARGV[1], ARGV[2], ARGV[3] || "master")
 when "rm" then command_rm ARGV[1]
 when "init" then command_init ARGV[1] || "all"
 when "update" then command_update ARGV[1] || "all"
+when "reset" then command_reset ARGV[1] || "all"
 when "cmd" then command_cmd ARGV[1]
 when "list" then command_list
 when "heads" then command_list_default_heads

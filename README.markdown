@@ -1,7 +1,8 @@
 # git-external
 
 Intends to provide an alternative to git-submodules but without being
-attached to an specific commit
+attached to an specific commit. There is still an option to specify a particular
+commit if necessary.
 
 ## Requirements
 
@@ -23,7 +24,7 @@ git external
 
 Setup a new "external" repository:
 <pre class="terminal">
-git external add &lt;repository> &lt;path&gt; [&lt;branch&gt; [&lt;commit&gt;]]
+git external add &lt;repository> &lt;path&gt; [&lt;branch or commit#40&gt;]
 </pre>
 
 Initialize all external repositories:
@@ -49,6 +50,11 @@ git external update &lt;name&gt;
 Status of your repository:
 <pre class="terminal">
 git external status
+</pre>
+
+Reset all changes in the repositories (eq. to `git reset --hard`):
+<pre class="terminal">
+git external reset [&lt;name&rt;]
 </pre>
 
 Configuration of your repository:
