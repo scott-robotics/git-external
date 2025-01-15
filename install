@@ -2,4 +2,4 @@
 
 rm *.gem
 gem build scottnothing-git-external.gemspec
-sudo gem install scottnothing-git-external*.gem  --no-ri --no-rdoc
+sudo gem install scottnothing-git-external*.gem

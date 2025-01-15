@@ -77,7 +77,7 @@ git external rm &lt;path&gt;
 ## How to build
 
 <pre class="terminal">
-git clone git://github.com/scottnothing/git-external.git
+git clone git@github.com:scott-robotics/git-external.git
 cd git-external
 ./install
 </pre>
